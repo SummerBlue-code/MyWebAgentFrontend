@@ -1,0 +1,112 @@
+/* color palette from <https://github.com/vuejs/theme> */
+:root {
+  /* 主题色 - 用户提供的配色 */
+  --theme-primary: #52616b;
+  --theme-primary-light: #e0f0ff;
+  --theme-secondary: #52616b;
+  --theme-secondary-light: #c9d6df;
+
+  /* 背景色 */
+  --theme-bg-primary: #f0f5f9;
+  --theme-bg-secondary: #ffffff;
+  --theme-bg-tertiary: #e6eef5;
+  
+  /* 文本色 */
+  --theme-text-primary: #1a3a5a;
+  --theme-text-secondary: #52616b;
+  --theme-text-tertiary: #7a8a94;
+  
+  /* 基础色 */
+  --vt-c-white: #ffffff;
+  --vt-c-white-soft: #f8f8f8;
+  --vt-c-white-mute: #f2f2f2;
+
+  --vt-c-black: #181818;
+  --vt-c-black-soft: #222222;
+  --vt-c-black-mute: #282828;
+
+  --vt-c-indigo: #2c3e50;
+
+  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
+  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
+
+  --vt-c-text-light-1: var(--vt-c-indigo);
+  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
+}
+
+/* semantic color variables for this project */
+:root {
+  --color-background: var(--theme-bg-primary);
+  --color-background-soft: var(--theme-bg-secondary);
+  --color-background-mute: var(--theme-bg-tertiary);
+
+  --color-border: var(--theme-primary-light);
+  --color-border-hover: var(--theme-bg-secondary);
+
+  --color-heading: var(--theme-text-primary);
+  --color-text: var(--theme-text-primary);
+
+  /* 主题色应用 */
+  --color-primary: var(--theme-primary);
+  --color-primary-light: var(--theme-primary-light);
+  --color-secondary: var(--theme-secondary);
+  --color-secondary-light: var(--theme-secondary-light);
+
+  /* 文本色应用 */
+  --color-text-primary: var(--theme-text-primary);
+  --color-text-secondary: var(--theme-text-secondary);
+  --color-text-tertiary: var(--theme-text-tertiary);
+
+  --section-gap: 160px;
+
+  --font-size-small: 12px;
+  --font-size-medium: 14px;
+  --font-size-large: 16px;
+  --font-size-xlarge: 18px;
+  --font-size-xxlarge: 20px;
+
+  --icon-size-small: 12px;
+  --icon-size-medium: 16px;
+  --icon-size-large: 20px;
+  --icon-size-xlarge: 24px;
+  --icon-size-xxlarge: 28px;
+
+  --btn-primary: #3b82f6;
+  --btn-primary-hover: #2563eb;
+  --btn-primary-active: #1d4ed8;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  font-weight: normal;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--color-text);
+  background: var(--color-background);
+  transition:
+    color 0.5s,
+    background-color 0.5s;
+  line-height: 1.6;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
+  font-size: 15px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
