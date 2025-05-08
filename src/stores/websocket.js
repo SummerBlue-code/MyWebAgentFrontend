@@ -6,30 +6,40 @@ export const useWebSocketStore = defineStore('websocket', {
     isConnected: false,
     reconnectAttempts: 0,
     maxReconnectAttempts: 5,
-    reconnectDelay: 3000
+    reconnectDelay: 3000,
+    allowReconnect: true
   }),
 
   actions: {
-    connect(url) {
+    connect(url, username, password) {
       if (this.socket) {
         this.disconnect()
       }
 
+      this.allowReconnect = true
       this.socket = new WebSocket(url)
 
       this.socket.onopen = () => {
         console.log('WebSocket connected')
         this.isConnected = true
         this.reconnectAttempts = 0
-        this.sendMessage({
-            user_id:"1234567890",
-        })
+        
+        // 如果有用户名和密码，则发送登录请求
+        if (username && password) {
+          this.sendMessage({
+            type: 'login',
+            username: username,
+            password: password
+          })
+        }
       }
 
       this.socket.onclose = () => {
         console.log('WebSocket disconnected')
         this.isConnected = false
-        this.handleReconnect()
+        if (this.allowReconnect) {
+          this.handleReconnect()
+        }
       }
 
       this.socket.onerror = (error) => {
@@ -39,6 +49,7 @@ export const useWebSocketStore = defineStore('websocket', {
     },
 
     disconnect() {
+      this.allowReconnect = false
       if (this.socket) {
         this.socket.close()
         this.socket = null
@@ -47,7 +58,7 @@ export const useWebSocketStore = defineStore('websocket', {
     },
 
     handleReconnect() {
-      if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      if (this.reconnectAttempts < this.maxReconnectAttempts && this.allowReconnect) {
         this.reconnectAttempts++
         setTimeout(() => {
           if (this.socket && this.socket.url) {

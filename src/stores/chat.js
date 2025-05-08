@@ -5,7 +5,6 @@ export const useChatStore = defineStore('chat', {
     isChatActive: false,
     isNewChatEnabled: false,
     chatMessages: [],
-    chatHistoryList: [],
     currentChatIndex: -1
   }),
   
@@ -22,6 +21,10 @@ export const useChatStore = defineStore('chat', {
       this.chatMessages.push(message)
     },
     
+    initChatMessages(messages) {
+      this.chatMessages = messages
+    },
+
     addChatAssistantMessage(message) {
       if(this.chatMessages[this.chatMessages.length - 1].role === 'user') {
         this.chatMessages.push(message)
@@ -35,10 +38,6 @@ export const useChatStore = defineStore('chat', {
 
     clearChatMessages() {
       this.chatMessages = []
-    },
-    
-    addChatHistory(chat) {
-      this.chatHistoryList.push(chat)
     },
     
     setCurrentChatIndex(index) {

@@ -25,7 +25,7 @@
     <!-- 历史聊天记录面板 -->
     <ChatHistory 
       :position="historyPanelPosition"
-      :chat-history-list="chatStore.chatHistoryList"
+      :chat-history-list="historyStore.historyList"
       :is-fixed="isHistoryPanelFixed"
       :is-new-chat-enabled="chatStore.isNewChatEnabled"
       @panel-leave="handleHistoryPanelLeave"
@@ -39,6 +39,12 @@
       <IconSetting class="settings-icon" />
       <span>设置</span>
     </button>
+
+    <!-- 用户登录按钮 -->
+    <UserLogin 
+      @login="handleLogin"
+      @logout="handleLogout"
+    />
 
     <!-- Toast消息 -->
     <ToastMessage
@@ -59,16 +65,21 @@ import ChatHistory from './history/ChatHistory.vue';
 import ChatMessage from './chat/ChatMessage.vue';
 import IconSetting from './icons/IconSetting.vue';
 import ToastMessage from './ToastMessage.vue';
+import UserLogin from './user/UserLogin.vue';
 
 import { useChatStore } from '../stores/chat';
 import { useSettingsStore } from '../stores/settings';
 import { useToastStore } from '../stores/toast';
 import { useWebSocketStore } from '../stores/websocket';
+import { useHistoryStore } from '../stores/history';
+import { useUserStore } from '../stores/user';
 
 const chatStore = useChatStore();
 const settingsStore = useSettingsStore();
 const toastStore = useToastStore();
 const websocketStore = useWebSocketStore();
+const historyStore = useHistoryStore();
+const userStore = useUserStore();
 
 const historyPanelPosition = ref(-100);
 const isHistoryPanelFixed = ref(false);
@@ -99,6 +110,22 @@ const unblurBackground = () => {
   settingsStore.unblurBackground();
 };
 
+const handleLogin = (credentials) => {
+  const wsUrl = 'ws://localhost:8765';
+  // 保存登录凭据到临时变量
+  window._tempLoginCredentials = credentials;
+  websocketStore.connect(wsUrl, credentials.username, credentials.password);
+  websocketStore.setMessageHandler(handleWebSocketMessage);
+};
+
+const handleLogout = () => {
+  if (!checkWebSocketConnection()) return;
+  
+  websocketStore.sendMessage({
+    type: 'logout'
+  });
+};
+
 const openSettingsPanel = () => {
   settingsStore.toggleSettingsPanel();
 };
@@ -109,13 +136,12 @@ const closePanel = () => {
 
 const handleServerAdded = (server) => {
   settingsStore.addServer(server);
+  websocketStore.sendMessage({
+      type: 'settings_add_server',
+      server: settingsStore.serverList
+    });
 };
 
-const addChat = (chatName) => {
-  chatStore.addChatHistory({
-    title: chatName
-  });
-};
 
 const initChatPanel = () => {
   chatStore.setChatActive(true);
@@ -165,17 +191,18 @@ const handleSearch = (question) => {
     return;
   }
 
-  if (!chatStore.isChatActive) {
-    addChat(question);
-  }
   chatStore.setNewChatEnabled(true);
   initChatPanel();
   requestQuestion(question);
 };
 
-const selectChat = (index) => {
-  chatStore.setCurrentChatIndex(index);
-  chatStore.setChatActive(true);
+const selectChat = (conversationId) => {
+  websocketStore.sendMessage({
+    type: 'conversation_message',
+    conversation_id: conversationId
+  });
+
+  chatStore.setNewChatEnabled(true)
   initChatPanel();
 };
 
@@ -185,17 +212,25 @@ const requestQuestion = async (question) => {
   isLoading.value = true;
 
   try {
+    // 通过 WebSocket 发送问题
+    if (chatStore.chatMessages.length > 0) {
+      websocketStore.sendMessage({
+        type: 'user_question',
+        question: question,
+        conversation_id: historyStore.getCurrentHistory.id,
+        mcp_servers: settingsStore.serverList
+      });
+    }else{
+      websocketStore.sendMessage({
+        type: 'conversation_question',
+        question: question,
+        mcp_servers: settingsStore.serverList
+      })
+    }
     // 添加用户消息到聊天历史
     chatStore.addChatUserMessage({
       role: 'user',
       content: question
-    });
-
-    // 通过 WebSocket 发送问题
-    websocketStore.sendMessage({
-      type: 'user_question',
-      question: question,
-      mcp_servers: settingsStore.serverList
     });
   } catch (err) {
     handleError(err.message);
@@ -215,6 +250,57 @@ const handleWebSocketMessage = (data) => {
       }
     };
     websocketStore.sendMessage(heartbeatAck);
+  } else if (data.type === 'logout_success') {
+      userStore.logout()
+      historyStore.clearHistory()
+      chatStore.clearChatMessages()
+      settingsStore.clearServerList()
+      isLoading.value = false
+      chatStore.setChatActive(false)
+      chatStore.setNewChatEnabled(false)
+      undoChat()
+      websocketStore.disconnect()
+      // 清除 cookie 和临时凭据
+      document.cookie = 'username=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = 'password=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      window._tempLoginCredentials = null;
+      toastStore.showToast('已退出登录', 'success')
+  } else if(data.type === 'user_settings'){
+    settingsStore.initServerList(data.user_settings);
+  } else if (data.type === 'auth_success') {
+    userStore.setLoggedIn(true);
+    userStore.setUserInfo({
+      username: data.username,
+      user_id: data.user_id,
+    });
+    // 存储登录信息到 cookie
+    const expirationDate = new Date();
+    expirationDate.setDate(expirationDate.getDate() + 7); // 7天后过期
+    document.cookie = `username=${encodeURIComponent(data.username)}; expires=${expirationDate.toUTCString()}; path=/;`;
+    // 使用临时保存的密码
+    if (window._tempLoginCredentials) {
+      document.cookie = `password=${encodeURIComponent(window._tempLoginCredentials.password)}; expires=${expirationDate.toUTCString()}; path=/;`;
+      // 清除临时凭据
+      window._tempLoginCredentials = null;
+    }
+    toastStore.showToast('登录成功', 'success');
+  } else if (data.type === 'login_error') {
+    toastStore.showToast(data.message || '登录失败', 'error');
+    // 清除临时凭据
+    window._tempLoginCredentials = null;
+  } else if (data.type === 'conversation_title') {
+    if(historyStore.getAllHistory.find(history => history.id === data.conversation_id)) {
+      historyStore.updateAppendHistory(data.conversation_id, data.title);
+    }else{
+      historyStore.addHistory(data);
+      historyStore.setCurrentHistory(data.conversation_id);
+    }
+  } else if (data.type === 'conversation_list') {
+    // 处理历史记录数据
+    historyStore.initHistory(data.conversations);
+  } else if (data.type === 'conversation_message') {
+    chatStore.initChatMessages(data.messages);
+    console.log(chatStore.chatMessages);
   }else if (data.type === 'server_answer' && data.answer !== "") {
     chatStore.addChatAssistantMessage({
       role: 'assistant',
@@ -222,13 +308,12 @@ const handleWebSocketMessage = (data) => {
     });
     isLoading.value = false;
   } else if (data.type === 'server_select_function') {
-    // 如果服务器返回'server_select_function'则在chatStore添加AssistantTool调用消息
     chatStore.addChatAssistantToolMessage({
       role: 'assistant_tool',
       content: '请选择要执行的工具：',
       select_functions: data.select_functions
     });
-  }else if (data.type === 'error') {
+  } else if (data.type === 'error') {
     handleError(data.message);
   }
 };
@@ -239,6 +324,7 @@ const executeSelectedTools = (selectedTools) => {
   const message = {
     type: 'execute_tools',
     select_functions: selectedTools,
+    conversation_id: historyStore.getCurrentHistory.id,
     mcp_servers: settingsStore.serverList,
     question: chatStore.getCurrentQuestion()
   };
@@ -247,11 +333,42 @@ const executeSelectedTools = (selectedTools) => {
   websocketStore.sendMessage(message);
 };
 
+// 从 cookie 中获取登录信息
+const getLoginInfoFromCookie = () => {
+  const cookies = document.cookie.split(';');
+  const loginInfo = {
+    username: '',
+    password: ''
+  };
+  
+  console.log('All cookies:', document.cookie);
+  
+  cookies.forEach(cookie => {
+    const [name, value] = cookie.trim().split('=');
+    console.log('Processing cookie:', name, value);
+    if (name === 'username') {
+      loginInfo.username = decodeURIComponent(value);
+      console.log('Decoded username:', loginInfo.username);
+    } else if (name === 'password') {
+      loginInfo.password = decodeURIComponent(value);
+      console.log('Decoded password:', loginInfo.password);
+    }
+  });
+  
+  console.log('Final login info:', loginInfo);
+  return loginInfo;
+};
+
 // 初始化 WebSocket 连接
 onMounted(() => {
-  const wsUrl = 'ws://localhost:8765';
-  websocketStore.connect(wsUrl);
-  websocketStore.setMessageHandler(handleWebSocketMessage);
+  // 检查是否有保存的登录信息
+  const loginInfo = getLoginInfoFromCookie();
+  if (loginInfo.username && loginInfo.password) {
+    // 自动登录
+    const wsUrl = 'ws://localhost:8765';
+    websocketStore.connect(wsUrl, loginInfo.username, loginInfo.password);
+    websocketStore.setMessageHandler(handleWebSocketMessage);
+  }
 });
 
 // 清理 WebSocket 连接
@@ -316,7 +433,7 @@ onUnmounted(() => {
 }
 
 #settings-button {
-  right: 20px;
+  right: 80px;
   top: 20px;
 }
 
@@ -342,5 +459,12 @@ onUnmounted(() => {
   width: var(--icon-size-medium);
   height: var(--icon-size-medium);
   fill: currentColor;
+}
+
+.user-login {
+  position: fixed;
+  right: 20px;
+  top: 16px;
+  z-index: 200;
 }
 </style> 

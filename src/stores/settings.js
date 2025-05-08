@@ -8,12 +8,14 @@ export const useSettingsStore = defineStore('settings', {
   }),
   
   actions: {
+
     toggleSettingsPanel() {
       this.isSettingsPanelActive = !this.isSettingsPanelActive
     },
     
     addServer(server) {
       this.serverList.push(server)
+      console.log(this.serverList)
     },
     
     setBlurIntensity(intensity) {
@@ -26,6 +28,12 @@ export const useSettingsStore = defineStore('settings', {
     
     unblurBackground() {
       this.blurIntensity = 0
+    },
+    initServerList(serverList) {
+      this.serverList = serverList
+    },
+    clearServerList() {
+      this.serverList = []
     }
   }
 }) 

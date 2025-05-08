@@ -68,9 +68,10 @@ import { ref } from 'vue';
 import ToastMessage from '../ToastMessage.vue';
 import { useSettingsStore } from '../../stores/settings';
 import { useToastStore } from '../../stores/toast';
-
+import { useWebSocketStore } from '../../stores/websocket';
 const settingsStore = useSettingsStore();
 const toastStore = useToastStore();
+const websocketStore = useWebSocketStore();
 
 const props = defineProps({
   isActive: {

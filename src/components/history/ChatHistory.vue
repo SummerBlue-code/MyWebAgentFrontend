@@ -39,10 +39,10 @@
           
           <!-- 最近对话列表 -->
           <div class="recent-chats-list" v-show="showRecentChats">
-            <div v-for="(chat, index) in chatHistoryList" 
-                 :key="index" 
+            <div v-for="chat in historyStore.getAllHistory" 
+                 :key="chat.id" 
                  class="recent-chat-item"
-                 @click="selectChat(index)">
+                 @click="selectChat(chat.id)">
               <i class="fas fa-comment"></i>
               <span>{{ chat.title }}</span>
             </div>
@@ -59,11 +59,11 @@ import IconPanel from '../icons/IconPanel.vue';
 import IconAdd from '../icons/IconAdd.vue';
 import IconDownArrow from '../icons/IconDownArrow.vue';
 import IconChatHistory from '../icons/IconChatHistory.vue';
+import { useHistoryStore } from '../../stores/history';
+
+const historyStore = useHistoryStore();
+
 const props = defineProps({
-  chatHistoryList: {
-    type: Array,
-    default: () => []
-  },
   isNewChatEnabled: {
     type: Boolean,
     default: false
@@ -93,8 +93,9 @@ const undoChat = () => {
   hideHistoryPanel();
 };
 
-const selectChat = (index) => {
-  emit('select-chat', index);
+const selectChat = (historyId) => {
+  historyStore.setCurrentHistory(historyId);
+  emit('select-chat', historyId);
   hideHistoryPanel();
 };
 </script>
