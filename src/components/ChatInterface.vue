@@ -55,12 +55,6 @@
       <span>设置</span>
     </button>
 
-    <!-- 知识库按钮 -->
-    <button id="knowledge-button" @click="openKnowledgePanel">
-      <IconKnowledge class="knowledge-icon" />
-      <span>知识库</span>
-    </button>
-
     <!-- 用户登录按钮 -->
     <UserLogin 
       @login="handleLogin"
@@ -461,9 +455,23 @@ const handleAddDatabase = async (name) => {
 
 // 选择数据库
 const handleSelectDatabase = async (db) => {
-  knowledgeStore.setCurrentDatabase(db.kb_id);
   // 获取该数据库的文件列表
   await fetchFileList(db.kb_id);
+};
+
+// 确认使用知识库
+const handleConfirmDatabase = (database) => {
+  if (database === null) {
+    // 取消使用知识库
+    knowledgeStore.setCurrentDatabase(null);
+    knowledgeStore.setCurrentFiles([]);
+    toastStore.showToast('已取消使用知识库', 'success');
+  } else {
+    // 使用选中的知识库
+    knowledgeStore.setCurrentDatabase(database.kb_id);
+    toastStore.showToast(`已选择知识库：${database.name}`, 'success');
+  }
+  closeKnowledgePanel();
 };
 
 // 上传文件
@@ -520,12 +528,6 @@ const handleDeleteFile = async (file) => {
   } catch (error) {
     toastStore.showToast(error.message, 'error');
   }
-};
-
-// 确认使用知识库
-const handleConfirmDatabase = (database) => {
-  knowledgeStore.setCurrentDatabase(database.kb_id);
-  toastStore.showToast(`已选择知识库：${database.name}`, 'success');
 };
 
 // 获取文件列表

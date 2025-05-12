@@ -12,7 +12,7 @@
       <div class="knowledge-container">
         <!-- 左侧数据库列表 -->
         <div class="database-list">
-          <h3>数据库列表</h3>
+          <h3>知识库列表</h3>
           <div class="database-input-section">
             <input 
               type="text" 
@@ -21,14 +21,14 @@
               class="database-input"
               @keyup.enter="handleAddDatabase"
             >
-            <button @click="handleAddDatabase" class="add-database-btn">添加数据库</button>
+            <button @click="handleAddDatabase" class="add-database-btn">添加知识库</button>
           </div>
           <div class="database-items">
             <div 
               v-for="(db, index) in databaseList" 
               :key="index"
               class="database-item"
-              :class="{ active: selectedDatabase === db.kb_id }"
+              :class="{ active: panelSelectedDatabase === db.kb_id }"
               @click="handleSelectDatabase(db)"
             >
               <span class="database-name">{{ db.name }}</span>
@@ -38,16 +38,18 @@
           <div class="confirm-section">
             <button 
               class="confirm-btn"
-              :class="{ disabled: !selectedDatabase }"
-              :disabled="!selectedDatabase"
+              :class="{ 
+                disabled: !panelSelectedDatabase
+              }"
+              :disabled="!panelSelectedDatabase"
               @click="handleConfirmDatabase"
             >
-              使用此知识库
+              {{ panelSelectedDatabase === selectedDatabase && selectedDatabase !== null ? '取消此知识库' : '使用此知识库' }}
             </button>
             <button 
               class="delete-database-btn"
-              :class="{ disabled: !selectedDatabase }"
-              :disabled="!selectedDatabase"
+              :class="{ disabled: !panelSelectedDatabase }"
+              :disabled="!panelSelectedDatabase"
               @click="handleDeleteDatabase"
             >
               删除此知识库
@@ -158,6 +160,7 @@ const toastStore = useToastStore();
 const newDatabaseName = ref('');
 const fileInput = ref(null);
 const selectedFile = ref(null);
+const panelSelectedDatabase = ref(null);
 
 const closePanel = () => {
   emit('close');
@@ -165,7 +168,7 @@ const closePanel = () => {
 
 const handleAddDatabase = () => {
   if (!newDatabaseName.value.trim()) {
-    toastStore.showToast('请输入数据库名称', 'error');
+    toastStore.showToast('请输入知识库名称', 'error');
     return;
   }
   emit('add-database', newDatabaseName.value);
@@ -173,6 +176,7 @@ const handleAddDatabase = () => {
 };
 
 const handleSelectDatabase = (db) => {
+  panelSelectedDatabase.value = db.kb_id;
   emit('select-database', db);
 };
 
@@ -197,12 +201,21 @@ const handleDeleteFile = (file) => {
 };
 
 const handleConfirmDatabase = () => {
-  if (!props.selectedDatabase) {
+  if (!panelSelectedDatabase.value) {
     toastStore.showToast('请先选择一个知识库', 'error');
     return;
   }
-  const selectedDb = props.databaseList.find(db => db.kb_id === props.selectedDatabase);
-  emit('confirm-database', selectedDb);
+  const selectedDb = props.databaseList.find(db => db.kb_id === panelSelectedDatabase.value);
+  
+  if (panelSelectedDatabase.value === props.selectedDatabase) {
+    // 如果是当前使用的知识库，则取消使用
+    emit('confirm-database', null);
+    toastStore.showToast('已取消使用知识库', 'success');
+  } else {
+    // 否则使用选中的知识库
+    emit('confirm-database', selectedDb);
+    toastStore.showToast(`已选择知识库：${selectedDb.name}`, 'success');
+  }
   emit('close');
 };
 
@@ -211,11 +224,11 @@ const handleSelectFile = (file) => {
 };
 
 const handleDeleteDatabase = () => {
-  if (!props.selectedDatabase) {
+  if (!panelSelectedDatabase.value) {
     toastStore.showToast('请先选择一个知识库', 'error');
     return;
   }
-  const selectedDb = props.databaseList.find(db => db.kb_id === props.selectedDatabase);
+  const selectedDb = props.databaseList.find(db => db.kb_id === panelSelectedDatabase.value);
   emit('delete-database', selectedDb);
 };
 
@@ -508,6 +521,17 @@ const formatTime = (timestamp) => {
   background: var(--color-background-soft);
   transform: none;
   box-shadow: none;
+}
+
+.confirm-btn.cancel-mode {
+  background: var(--color-background-soft);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.confirm-btn.cancel-mode:hover:not(.disabled) {
+  background: var(--color-background);
+  border-color: var(--color-border-hover);
 }
 
 .delete-database-btn {

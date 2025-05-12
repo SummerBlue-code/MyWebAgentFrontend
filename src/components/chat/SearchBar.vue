@@ -26,11 +26,19 @@
               <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
             </svg>
           </button>
-          <button class="deep-search-button">
+          <button 
+            class="knowledge-button" 
+            :class="{ 'has-selected': knowledgeStore.currentDatabase }"
+            @click="openKnowledgePanel"
+            :title="getKnowledgeButtonTitle"
+          >
             <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right: 4px">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" fill="currentColor"/>
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" fill="currentColor"/>
             </svg>
-            深度搜索
+            <span class="knowledge-text">
+              {{ getKnowledgeButtonText }}
+            </span>
+            <span v-if="knowledgeStore.currentDatabase" class="selected-indicator"></span>
           </button>
         </div>
         <button class="icon-button search-button" @click="searchQuestion" title="搜索">
@@ -44,13 +52,15 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import ChatMessage from './ChatMessage.vue';
 import { useChatStore } from '../../stores/chat';
 import { useSettingsStore } from '../../stores/settings';
+import { useKnowledgeStore } from '../../stores/knowledge';
 
 const chatStore = useChatStore();
 const settingsStore = useSettingsStore();
+const knowledgeStore = useKnowledgeStore();
 
 const props = defineProps({
   isChatActive: {
@@ -67,6 +77,10 @@ const emit = defineEmits(['search', 'blur', 'unblur']);
 
 const searchInput = ref('');
 const chatContainer = ref(null);
+
+const openKnowledgePanel = () => {
+  knowledgeStore.toggleKnowledgePanel();
+};
 
 const blurBackground = () => {
   settingsStore.blurBackground();
@@ -90,6 +104,22 @@ const searchQuestion = () => {
     }, 100);
   }
 };
+
+const getKnowledgeButtonText = computed(() => {
+  if (!knowledgeStore.currentDatabase) {
+    return '知识库';
+  }
+  const currentDb = knowledgeStore.databaseList.find(db => db.kb_id === knowledgeStore.currentDatabase);
+  return currentDb ? currentDb.name : '知识库';
+});
+
+const getKnowledgeButtonTitle = computed(() => {
+  if (!knowledgeStore.currentDatabase) {
+    return '选择知识库';
+  }
+  const currentDb = knowledgeStore.databaseList.find(db => db.kb_id === knowledgeStore.currentDatabase);
+  return currentDb ? `当前知识库：${currentDb.name}` : '选择知识库';
+});
 </script>
 
 <style scoped>
@@ -182,7 +212,7 @@ textarea::placeholder {
   background: var(--color-background);
 }
 
-.deep-search-button {
+.knowledge-button {
   display: flex;
   align-items: center;
   padding: 8px 12px;
@@ -196,10 +226,53 @@ textarea::placeholder {
   box-shadow: 
     0 1px 2px rgba(0, 0, 0, 0.05),
     0 1px 1px rgba(0, 0, 0, 0.1);
+  position: relative;
+  min-width: 80px;
 }
 
-.deep-search-button:hover {
+.knowledge-button.has-selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--vt-c-white);
+}
+
+.knowledge-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.selected-indicator {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: var(--vt-c-white);
+  border-radius: 50%;
+  border: 2px solid var(--color-primary);
+}
+
+.knowledge-button:hover {
   background: var(--color-background);
+  transform: translateY(-1px);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 2px 2px rgba(0, 0, 0, 0.15);
+}
+
+.knowledge-button.has-selected:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: var(--vt-c-white);
+}
+
+.knowledge-button:active {
+  transform: translateY(0);
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 1px 1px rgba(0, 0, 0, 0.1);
 }
 
 .search-button {
