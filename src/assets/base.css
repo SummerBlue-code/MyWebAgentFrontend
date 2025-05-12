@@ -2,6 +2,7 @@
 :root {
   /* 主题色 - 用户提供的配色 */
   --theme-primary: #52616b;
+  --theme-primary-hover: #455057;
   --theme-primary-light: #e0f0ff;
   --theme-secondary: #52616b;
   --theme-secondary-light: #c9d6df;
@@ -48,6 +49,7 @@
 
   /* 主题色应用 */
   --color-primary: var(--theme-primary);
+  --color-primary-hover: var(--theme-primary-hover);
   --color-primary-light: var(--theme-primary-light);
   --color-secondary: var(--theme-secondary);
   --color-secondary-light: var(--theme-secondary-light);
@@ -74,6 +76,11 @@
   --btn-primary: #3b82f6;
   --btn-primary-hover: #2563eb;
   --btn-primary-active: #1d4ed8;
+
+  /* 危险按钮颜色 */
+  --color-danger: #ef4444;
+  --color-danger-hover: #dc2626;
+  --color-danger-active: #b91c1c;
 }
 
 *,

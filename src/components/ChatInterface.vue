@@ -4,13 +4,28 @@
     <div class="background" :style="{ filter: `blur(${settingsStore.blurIntensity}px)` }"></div>
 
     <!-- 遮罩层 -->
-    <div class="overlay" :class="{ active: settingsStore.isSettingsPanelActive }" @click="closePanel"></div>
+    <div class="overlay" :class="{ active: settingsStore.isSettingsPanelActive || knowledgeStore.isKnowledgePanelActive }" @click="closePanels"></div>
 
     <!-- 设置面板 -->
     <SettingsPanel 
       :is-active="settingsStore.isSettingsPanelActive"
       @close="closePanel"
       @server-added="handleServerAdded"
+    />
+
+    <!-- 知识库面板 -->
+    <KnowledgePanel
+      :is-active="knowledgeStore.isKnowledgePanelActive"
+      :database-list="knowledgeStore.databaseList"
+      :selected-database="knowledgeStore.currentDatabase"
+      :current-files="knowledgeStore.currentFiles"
+      @close="closeKnowledgePanel"
+      @add-database="handleAddDatabase"
+      @select-database="handleSelectDatabase"
+      @upload-files="handleUploadFiles"
+      @delete-file="handleDeleteFile"
+      @confirm-database="handleConfirmDatabase"
+      @delete-database="handleDeleteDatabase"
     />
 
     <!-- 搜索栏 -->
@@ -40,6 +55,12 @@
       <span>设置</span>
     </button>
 
+    <!-- 知识库按钮 -->
+    <button id="knowledge-button" @click="openKnowledgePanel">
+      <IconKnowledge class="knowledge-icon" />
+      <span>知识库</span>
+    </button>
+
     <!-- 用户登录按钮 -->
     <UserLogin 
       @login="handleLogin"
@@ -60,15 +81,18 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import SettingsPanel from './settings/SettingsPanel.vue';
+import KnowledgePanel from './knowledge/KnowledgePanel.vue';
 import SearchBar from './chat/SearchBar.vue';
 import ChatHistory from './history/ChatHistory.vue';
 import ChatMessage from './chat/ChatMessage.vue';
 import IconSetting from './icons/IconSetting.vue';
+import IconKnowledge from './icons/IconKnowledge.vue';
 import ToastMessage from './ToastMessage.vue';
 import UserLogin from './user/UserLogin.vue';
 
 import { useChatStore } from '../stores/chat';
 import { useSettingsStore } from '../stores/settings';
+import { useKnowledgeStore } from '../stores/knowledge';
 import { useToastStore } from '../stores/toast';
 import { useWebSocketStore } from '../stores/websocket';
 import { useHistoryStore } from '../stores/history';
@@ -76,6 +100,7 @@ import { useUserStore } from '../stores/user';
 
 const chatStore = useChatStore();
 const settingsStore = useSettingsStore();
+const knowledgeStore = useKnowledgeStore();
 const toastStore = useToastStore();
 const websocketStore = useWebSocketStore();
 const historyStore = useHistoryStore();
@@ -142,6 +167,13 @@ const handleServerAdded = (server) => {
     });
 };
 
+const openKnowledgePanel = () => {
+  knowledgeStore.toggleKnowledgePanel();
+};
+
+const closeKnowledgePanel = () => {
+  knowledgeStore.isKnowledgePanelActive = false;
+};
 
 const initChatPanel = () => {
   chatStore.setChatActive(true);
@@ -255,6 +287,7 @@ const handleWebSocketMessage = (data) => {
       historyStore.clearHistory()
       chatStore.clearChatMessages()
       settingsStore.clearServerList()
+      knowledgeStore.clearKnowledge()
       isLoading.value = false
       chatStore.setChatActive(false)
       chatStore.setNewChatEnabled(false)
@@ -283,6 +316,8 @@ const handleWebSocketMessage = (data) => {
       // 清除临时凭据
       window._tempLoginCredentials = null;
     }
+        // 登录成功后获取数据库列表
+        fetchDatabaseList();
     toastStore.showToast('登录成功', 'success');
   } else if (data.type === 'login_error') {
     toastStore.showToast(data.message || '登录失败', 'error');
@@ -375,6 +410,190 @@ onMounted(() => {
 onUnmounted(() => {
   websocketStore.disconnect();
 });
+
+const closePanels = () => {
+  settingsStore.isSettingsPanelActive = false;
+  knowledgeStore.isKnowledgePanelActive = false;
+};
+
+// 获取数据库列表
+const fetchDatabaseList = async () => {
+  try {
+    const response = await fetch(`http://localhost:8080/api/knowledge-base?user_id=${userStore.userInfo.user_id}`);
+    if (!response.ok) {
+      throw new Error('获取数据库列表失败');
+    }
+    const data = await response.json();
+    knowledgeStore.databaseList = data["knowledge_bases"].map(db => ({
+      kb_id: db.kb_id,
+      name: db.title,
+      created_time: db.created_time,
+    }));
+  } catch (error) {
+    toastStore.showToast(error.message, 'error');
+  }
+};
+
+// 添加数据库
+const handleAddDatabase = async (name) => {
+  try {
+    const response = await fetch('http://localhost:8080/api/knowledge-base', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        user_id: userStore.userInfo.user_id,
+        title: name
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('创建数据库失败');
+    }
+
+    await fetchDatabaseList();
+    toastStore.showToast('数据库创建成功', 'success');
+  } catch (error) {
+    toastStore.showToast(error.message, 'error');
+  }
+};
+
+// 选择数据库
+const handleSelectDatabase = async (db) => {
+  knowledgeStore.setCurrentDatabase(db.kb_id);
+  // 获取该数据库的文件列表
+  await fetchFileList(db.kb_id);
+};
+
+// 上传文件
+const handleUploadFiles = async (files) => {
+  if (!knowledgeStore.currentDatabase) {
+    toastStore.showToast('请先选择一个数据库', 'error');
+    return;
+  }
+
+  try {
+    const file = files[0]; // 只取第一个文件
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`http://localhost:8080/api/knowledge-base/${knowledgeStore.currentDatabase}/files`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error(`文件 ${file.name} 上传失败`);
+    }
+
+    // 上传成功后重新获取文件列表
+    await fetchFileList(knowledgeStore.currentDatabase);
+    toastStore.showToast('文件上传成功', 'success');
+  } catch (error) {
+    toastStore.showToast(error.message, 'error');
+  }
+};
+
+// 删除文件
+const handleDeleteFile = async (file) => {
+  try {
+    const response = await fetch(`http://localhost:8080/api/knowledge-base/${knowledgeStore.currentDatabase}/files/${file.id}`, {
+      method: 'DELETE'
+    });
+
+    if (response.status === 404) {
+      throw new Error('文件不存在');
+    }
+    
+    if (response.status === 500) {
+      throw new Error('服务器内部错误');
+    }
+
+    if (!response.ok) {
+      throw new Error('文件删除失败');
+    }
+
+    // 删除成功后重新获取文件列表
+    await fetchFileList(knowledgeStore.currentDatabase);
+    toastStore.showToast('文件删除成功', 'success');
+  } catch (error) {
+    toastStore.showToast(error.message, 'error');
+  }
+};
+
+// 确认使用知识库
+const handleConfirmDatabase = (database) => {
+  knowledgeStore.setCurrentDatabase(database.kb_id);
+  toastStore.showToast(`已选择知识库：${database.name}`, 'success');
+};
+
+// 获取文件列表
+const fetchFileList = async (kbId) => {
+  try {
+    const response = await fetch(`http://localhost:8080/api/knowledge-base/${kbId}/files`);
+    
+    if (response.status === 404) {
+      const errorData = await response.json();
+      throw new Error('知识库不存在');
+    }
+    
+    if (response.status === 500) {
+      const errorData = await response.json();
+      throw new Error('服务器内部错误');
+    }
+
+    if (!response.ok) {
+      throw new Error('获取文件列表失败');
+    }
+
+    const data = await response.json();
+    knowledgeStore.setCurrentFiles(data.files.map(file => ({
+      id: file.file_id,
+      name: file.file_name,
+      created_time: file.created_time,
+      summary: file.summary,
+    })));
+  } catch (error) {
+    toastStore.showToast(error.message, 'error');
+    // 清空文件列表
+    knowledgeStore.setCurrentFiles([]);
+  }
+};
+
+// 删除知识库
+const handleDeleteDatabase = async (database) => {
+  try {
+    const response = await fetch(`http://localhost:8080/api/knowledge-base/${database.kb_id}`, {
+      method: 'DELETE'
+    });
+
+    if (response.status === 404) {
+      throw new Error('知识库不存在');
+    }
+    
+    if (response.status === 500) {
+      throw new Error('服务器内部错误');
+    }
+
+    if (!response.ok) {
+      throw new Error('知识库删除失败');
+    }
+
+    // 删除成功后重新获取数据库列表
+    await fetchDatabaseList();
+    
+    // 如果删除的是当前选中的数据库，清空当前数据库和文件列表
+    if (knowledgeStore.currentDatabase === database.kb_id) {
+      knowledgeStore.setCurrentDatabase(null);
+      knowledgeStore.setCurrentFiles([]);
+    }
+    
+    toastStore.showToast('知识库删除成功', 'success');
+  } catch (error) {
+    toastStore.showToast(error.message, 'error');
+  }
+};
 </script>
 
 <style scoped>
@@ -456,6 +675,55 @@ onUnmounted(() => {
 }
 
 .settings-icon {
+  width: var(--icon-size-medium);
+  height: var(--icon-size-medium);
+  fill: currentColor;
+}
+
+#knowledge-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: fixed;
+  padding: 8px 16px;
+  background: var(--theme-primary-light);
+  color: var(--theme-text-primary);
+  border-radius: 8px;
+  cursor: pointer;
+  z-index: 200;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+      0 4px 8px rgba(0, 0, 0, 0.2),
+      0 2px 4px rgba(0, 0, 0, 0.15),
+      inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--color-border-hover);
+  font-size: var(--font-size-small);
+}
+
+#knowledge-button {
+  right: 180px;
+  top: 20px;
+}
+
+#knowledge-button:hover {
+  background: var(--color-background-soft);
+  transform: translateY(-3px);
+  box-shadow:
+      0 8px 16px rgba(0, 0, 0, 0.25),
+      0 4px 8px rgba(0, 0, 0, 0.2),
+      inset 0 1px 1px rgba(255, 255, 255, 0.4);
+  border-color: var(--color-border-hover);
+}
+
+#knowledge-button:active {
+  transform: translateY(1px);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    inset 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.knowledge-icon {
   width: var(--icon-size-medium);
   height: var(--icon-size-medium);
   fill: currentColor;
