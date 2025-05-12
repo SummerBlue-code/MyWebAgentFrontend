@@ -38,6 +38,11 @@
                   </div>
                   <div class="server-info-right">
                     <span class="method-count">{{ server.server_functions.length }} 个方法</span>
+                    <button class="delete-server-btn" @click.stop="deleteServer(index)">
+                      <svg class="delete-icon" viewBox="0 0 24 24">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                      </svg>
+                    </button>
                   </div>
                 </div>
                 <div class="server-methods" :class="{ 'expanded': server.showMethods }">
@@ -80,7 +85,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['close', 'server-added']);
+const emit = defineEmits(['close', 'server-added', 'server-deleted']);
 
 const serverUrl = ref('');
 
@@ -147,6 +152,12 @@ const addServer = async () => {
   } catch (error) {
     toastStore.showToast(`添加服务器失败：${error.message}`, 'error');
   }
+};
+
+const deleteServer = (index) => {
+  
+  emit('server-deleted', index);
+  toastStore.showToast('服务器已更新', 'success');
 };
 </script>
 
@@ -387,5 +398,30 @@ const addServer = async () => {
   font-size: 16px;
   font-weight: 500;
   color: var(--color-text);
+}
+
+.delete-server-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.delete-server-btn:hover {
+  background: var(--color-background-soft);
+}
+
+.delete-icon {
+  width: 20px;
+  height: 20px;
+  fill: var(--color-text-tertiary);
+  transition: fill 0.2s ease;
+}
+
+.delete-server-btn:hover .delete-icon {
+  fill: var(--color-danger);
 }
 </style> 

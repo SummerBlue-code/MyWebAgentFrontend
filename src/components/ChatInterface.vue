@@ -11,6 +11,7 @@
       :is-active="settingsStore.isSettingsPanelActive"
       @close="closePanel"
       @server-added="handleServerAdded"
+      @server-deleted="handleServerDeleted"
     />
 
     <!-- 知识库面板 -->
@@ -636,6 +637,14 @@ const handleDeleteChat = async (conversationId) => {
   } catch (error) {
     handleError(error.message);
   }
+};
+
+const handleServerDeleted = (index) => {
+  settingsStore.removeServer(index);
+  websocketStore.sendMessage({
+      type: 'settings_add_server',
+      server: settingsStore.serverList
+    });
 };
 </script>
 

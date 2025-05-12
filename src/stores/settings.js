@@ -18,6 +18,10 @@ export const useSettingsStore = defineStore('settings', {
       console.log(this.serverList)
     },
     
+    removeServer(index) {
+      this.serverList.splice(index, 1)
+    },
+    
     setBlurIntensity(intensity) {
       this.blurIntensity = intensity
     },
