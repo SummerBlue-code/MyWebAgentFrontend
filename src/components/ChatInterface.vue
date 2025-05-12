@@ -239,18 +239,22 @@ const requestQuestion = async (question) => {
 
   try {
     // 通过 WebSocket 发送问题
+    console.log(knowledgeStore.currentDatabase);
     if (chatStore.chatMessages.length > 0) {
       websocketStore.sendMessage({
         type: 'user_question',
         question: question,
         conversation_id: historyStore.getCurrentHistory.id,
-        mcp_servers: settingsStore.serverList
+        mcp_servers: settingsStore.serverList,
+        knowledge_base_id: knowledgeStore.currentDatabase ? knowledgeStore.currentDatabase : null
       });
     }else{
+      console.log(knowledgeStore.currentDatabase);
       websocketStore.sendMessage({
         type: 'conversation_question',
         question: question,
-        mcp_servers: settingsStore.serverList
+        mcp_servers: settingsStore.serverList,
+        knowledge_base_id: knowledgeStore.currentDatabase ? knowledgeStore.currentDatabase : null
       })
     }
     // 添加用户消息到聊天历史
@@ -455,6 +459,7 @@ const handleAddDatabase = async (name) => {
 
 // 选择数据库
 const handleSelectDatabase = async (db) => {
+  console.log(db);
   // 获取该数据库的文件列表
   await fetchFileList(db.kb_id);
 };

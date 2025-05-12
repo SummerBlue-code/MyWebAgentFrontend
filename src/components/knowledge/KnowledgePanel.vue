@@ -66,17 +66,17 @@
               @change="handleFileUpload" 
               class="file-input"
               ref="fileInput"
-              :disabled="!selectedDatabase"
+              :disabled="!panelSelectedDatabase"
             >
             <button 
               @click="triggerFileInput" 
               class="upload-btn"
-              :class="{ disabled: !selectedDatabase }"
-              :disabled="!selectedDatabase"
+              :class="{ disabled: !panelSelectedDatabase }"
+              :disabled="!panelSelectedDatabase"
             >上传文件</button>
           </div>
           <div class="file-items">
-            <div v-if="!selectedDatabase" class="no-database-selected">
+            <div v-if="!panelSelectedDatabase" class="no-database-selected">
               请先选择一个数据库
             </div>
             <div v-else-if="currentFiles.length === 0" class="no-files">
