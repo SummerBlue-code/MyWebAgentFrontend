@@ -47,6 +47,7 @@
       @undo-chat="undoChat"
       @toggle-mode="changeHistoryPanelMode"
       @select-chat="selectChat"
+      @delete-chat="handleDeleteChat"
     />
 
     <!-- 设置按钮 -->
@@ -280,6 +281,27 @@ const handleWebSocketMessage = (data) => {
       }
     };
     websocketStore.sendMessage(heartbeatAck);
+  } else if (data.type === 'delete_conversation_success') {
+    // 服务器确认删除成功
+    const conversationId = data.conversation_id;
+    
+    // 从历史记录中移除
+    historyStore.historyList = historyStore.historyList.filter(history => history.id !== conversationId);
+    
+    // 如果删除的是当前对话，则清空聊天
+    if (historyStore.currentHistoryId === conversationId) {
+      chatStore.clearChatMessages();
+      chatStore.setChatActive(false);
+      chatStore.setNewChatEnabled(false);
+      historyStore.setCurrentHistory(null);
+    }
+
+    toastStore.showToast('对话已删除', 'success');
+    
+    websocketStore.sendMessage({
+      type: 'get_conversation_list',
+      user_id: userStore.userInfo.user_id
+    })
   } else if (data.type === 'logout_success') {
       userStore.logout()
       historyStore.clearHistory()
@@ -599,6 +621,20 @@ const handleDeleteDatabase = async (database) => {
     toastStore.showToast('知识库删除成功', 'success');
   } catch (error) {
     toastStore.showToast(error.message, 'error');
+  }
+};
+
+const handleDeleteChat = async (conversationId) => {
+  if (!checkWebSocketConnection()) return;
+
+  try {
+    // 发送删除请求到服务器
+    websocketStore.sendMessage({
+      type: 'delete_conversation',
+      conversation_id: conversationId
+    });
+  } catch (error) {
+    handleError(error.message);
   }
 };
 </script>
