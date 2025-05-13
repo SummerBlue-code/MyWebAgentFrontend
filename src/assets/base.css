@@ -1,6 +1,6 @@
 /* color palette from <https://github.com/vuejs/theme> */
 :root {
-  /* 主题色 - 用户提供的配色 */
+  /* 主题色 */
   --theme-primary: #52616b;
   --theme-primary-hover: #455057;
   --theme-primary-light: #e0f0ff;
@@ -19,24 +19,9 @@
   
   /* 基础色 */
   --vt-c-white: #ffffff;
-  --vt-c-white-soft: #f8f8f8;
-  --vt-c-white-mute: #f2f2f2;
-
   --vt-c-black: #181818;
-  --vt-c-black-soft: #222222;
-  --vt-c-black-mute: #282828;
 
-  --vt-c-indigo: #2c3e50;
-
-  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
-  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
-
-  --vt-c-text-light-1: var(--vt-c-indigo);
-  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
-}
-
-/* semantic color variables for this project */
-:root {
+  /* 语义化颜色变量 */
   --color-background: var(--theme-bg-primary);
   --color-background-soft: var(--theme-bg-secondary);
   --color-background-mute: var(--theme-bg-tertiary);
@@ -59,20 +44,7 @@
   --color-text-secondary: var(--theme-text-secondary);
   --color-text-tertiary: var(--theme-text-tertiary);
 
-  --section-gap: 160px;
-
-  --font-size-small: 12px;
-  --font-size-medium: 14px;
-  --font-size-large: 16px;
-  --font-size-xlarge: 18px;
-  --font-size-xxlarge: 20px;
-
-  --icon-size-small: 12px;
-  --icon-size-medium: 16px;
-  --icon-size-large: 20px;
-  --icon-size-xlarge: 24px;
-  --icon-size-xxlarge: 28px;
-
+  /* 按钮颜色 */
   --btn-primary: #3b82f6;
   --btn-primary-hover: #2563eb;
   --btn-primary-active: #1d4ed8;
@@ -81,6 +53,20 @@
   --color-danger: #ef4444;
   --color-danger-hover: #dc2626;
   --color-danger-active: #b91c1c;
+
+  /* 字体大小 */
+  --font-size-small: 12px;
+  --font-size-medium: 14px;
+  --font-size-large: 16px;
+  --font-size-xlarge: 18px;
+  --font-size-xxlarge: 20px;
+
+  /* 图标大小 */
+  --icon-size-small: 12px;
+  --icon-size-medium: 16px;
+  --icon-size-large: 20px;
+  --icon-size-xlarge: 24px;
+  --icon-size-xxlarge: 28px;
 }
 
 *,
