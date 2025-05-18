@@ -13,7 +13,7 @@
         <div class="MCP-setting" id="MCP-setting">
           <div class="MCP-setting-head" id="MCP-setting-head">
             <h3>MCP 服务器管理</h3>
-            <p style="color: var(--color-text-tertiary); font-size: 0.9em">MCP (Method Call Protocol) 服务器类似RPC服务，提供远程函数调用接口</p>
+            <p>MCP (Method Call Protocol) 服务器类似RPC服务，提供远程函数调用接口</p>
           </div>
           
           <!-- 添加服务器区域 -->
@@ -71,9 +71,9 @@
 <script setup>
 import { ref } from 'vue';
 import ToastMessage from '../ToastMessage.vue';
-import { useSettingsStore } from '../../stores/settings';
-import { useToastStore } from '../../stores/toast';
-import { useWebSocketStore } from '../../stores/websocket';
+import { useSettingsStore } from '@/stores/settings.js';
+import { useToastStore } from '@/stores/toast.js';
+import { useWebSocketStore } from '@/stores/websocket.js';
 const settingsStore = useSettingsStore();
 const toastStore = useToastStore();
 const websocketStore = useWebSocketStore();
@@ -155,7 +155,6 @@ const addServer = async () => {
 };
 
 const deleteServer = (index) => {
-  
   emit('server-deleted', index);
   toastStore.showToast('服务器已更新', 'success');
 };
@@ -213,7 +212,10 @@ const deleteServer = (index) => {
 .MCP-setting {
   margin-top: 20px;
 }
-
+.MCP-setting-head p{
+  color : var(--color-text-tertiary);
+  font-size: 0.9em
+}
 .MCP-control {
   margin: 10px 0;
   padding: 12px 16px;
@@ -252,7 +254,6 @@ const deleteServer = (index) => {
 .server-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.1);
 }
 
 .add-server-btn {

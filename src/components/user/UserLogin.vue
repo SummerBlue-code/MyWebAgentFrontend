@@ -21,37 +21,19 @@
           <div v-if="!userStore.isLoggedIn" class="login-form">
             <div class="form-group">
               <label for="username">用户名</label>
-              <input 
-                type="text" 
-                id="username" 
-                v-model="formData.username" 
-                placeholder="请输入用户名"
-              />
+              <input type="text" id="username" v-model="formData.username" placeholder="请输入用户名"/>
             </div>
             <div class="form-group">
               <label for="password">密码</label>
-              <input 
-                type="password" 
-                id="password" 
-                v-model="formData.password" 
-                placeholder="请输入密码"
-              />
+              <input type="password" id="password" v-model="formData.password" placeholder="请输入密码"/>
             </div>
             <div v-if="isRegister" class="form-group">
               <label for="confirmPassword">确认密码</label>
-              <input 
-                type="password" 
-                id="confirmPassword" 
-                v-model="formData.confirmPassword" 
-                placeholder="请再次输入密码"
-              />
+              <input type="password" id="confirmPassword" v-model="formData.confirmPassword" placeholder="请再次输入密码"/>
             </div>
             <div class="form-actions">
-              <button class="submit-button" @click="handleSubmit">
-                {{ isRegister ? '注册' : '登录' }}
-              </button>
-              <button class="switch-mode-button" @click="toggleMode">
-                {{ isRegister ? '已有账号？去登录' : '没有账号？去注册' }}
+              <button class="submit-button" @click="handleSubmit">{{ isRegister ? '注册' : '登录' }}</button>
+              <button class="switch-mode-button" @click="toggleMode">{{ isRegister ? '已有账号？去登录' : '没有账号？去注册' }}
               </button>
             </div>
           </div>
@@ -79,9 +61,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useUserStore } from '../../stores/user'
-import { useWebSocketStore } from '../../stores/websocket'
-import { useToastStore } from '../../stores/toast'
+import { useUserStore } from '@/stores/user.js'
+import { useWebSocketStore } from '@/stores/websocket.js'
+import { useToastStore } from '@/stores/toast.js'
 import axios from 'axios'
 
 const userStore = useUserStore()
@@ -318,7 +300,6 @@ onMounted(() => {
 }
 
 .submit-button:hover {
-  background: var(--color-primary-dark);
   transform: translateY(-1px);
 }
 
@@ -330,10 +311,6 @@ onMounted(() => {
   cursor: pointer;
   font-size: 14px;
   transition: color 0.2s ease;
-}
-
-.switch-mode-button:hover {
-  color: var(--color-primary-dark);
 }
 
 .user-info {

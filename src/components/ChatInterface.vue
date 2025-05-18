@@ -80,9 +80,7 @@ import SettingsPanel from './settings/SettingsPanel.vue';
 import KnowledgePanel from './knowledge/KnowledgePanel.vue';
 import SearchBar from './chat/SearchBar.vue';
 import ChatHistory from './history/ChatHistory.vue';
-import ChatMessage from './chat/ChatMessage.vue';
 import IconSetting from './icons/IconSetting.vue';
-import IconKnowledge from './icons/IconKnowledge.vue';
 import ToastMessage from './ToastMessage.vue';
 import UserLogin from './user/UserLogin.vue';
 
@@ -503,8 +501,8 @@ const handleConfirmDatabase = (database) => {
 };
 
 // 上传文件
-const handleUploadFiles = async (files) => {
-  if (!knowledgeStore.currentDatabase) {
+const handleUploadFiles = async (files, databaseId) => {
+  if (!databaseId) {
     toastStore.showToast('请先选择一个数据库', 'error');
     return;
   }
@@ -514,7 +512,7 @@ const handleUploadFiles = async (files) => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`http://localhost:8080/api/knowledge-base/${knowledgeStore.currentDatabase}/files`, {
+    const response = await fetch(`http://localhost:8080/api/knowledge-base/${databaseId}/files`, {
       method: 'POST',
       body: formData
     });
@@ -524,7 +522,7 @@ const handleUploadFiles = async (files) => {
     }
 
     // 上传成功后重新获取文件列表
-    await fetchFileList(knowledgeStore.currentDatabase);
+    await fetchFileList(databaseId);
     toastStore.showToast('文件上传成功', 'success');
   } catch (error) {
     toastStore.showToast(error.message, 'error');
@@ -532,9 +530,14 @@ const handleUploadFiles = async (files) => {
 };
 
 // 删除文件
-const handleDeleteFile = async (file) => {
+const handleDeleteFile = async (file, databaseId) => {
+  if (!databaseId) {
+    toastStore.showToast('请先选择一个知识库', 'error');
+    return;
+  }
+
   try {
-    const response = await fetch(`http://localhost:8080/api/knowledge-base/${knowledgeStore.currentDatabase}/files/${file.id}`, {
+    const response = await fetch(`http://localhost:8080/api/knowledge-base/${databaseId}/files/${file.id}`, {
       method: 'DELETE'
     });
 
@@ -551,7 +554,7 @@ const handleDeleteFile = async (file) => {
     }
 
     // 删除成功后重新获取文件列表
-    await fetchFileList(knowledgeStore.currentDatabase);
+    await fetchFileList(databaseId);
     toastStore.showToast('文件删除成功', 'success');
   } catch (error) {
     toastStore.showToast(error.message, 'error');
@@ -661,7 +664,7 @@ const handleServerDeleted = (index) => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: url('../assets/background-image.jpg') center/cover no-repeat;
+  background: url('../assets/background-image.png') center/cover no-repeat;
   transition: filter 0.3s ease;
 }
 

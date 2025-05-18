@@ -47,11 +47,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import ChatMessage from './ChatMessage.vue';
-import { useChatStore } from '../../stores/chat';
-import { useSettingsStore } from '../../stores/settings';
-import { useKnowledgeStore } from '../../stores/knowledge';
+import { useChatStore } from '@/stores/chat.js';
+import { useSettingsStore } from '@/stores/settings.js';
+import { useKnowledgeStore } from '@/stores/knowledge.js';
 
 const chatStore = useChatStore();
 const settingsStore = useSettingsStore();
@@ -72,6 +72,53 @@ const emit = defineEmits(['search', 'blur', 'unblur']);
 
 const searchInput = ref('');
 const chatContainer = ref(null);
+const shouldScrollToBottom = ref(true);
+
+// 检查是否应该滚动到底部
+const checkShouldScrollToBottom = () => {
+  if (!chatContainer.value) return true;
+  
+  const { scrollTop, scrollHeight, clientHeight } = chatContainer.value;
+  // 如果没有滚动条或者已经在底部附近（容差20px），则应该滚动到底部
+  return !scrollHeight || scrollTop + clientHeight >= scrollHeight - 20;
+};
+
+// 滚动到底部
+const scrollToBottom = () => {
+  if (!chatContainer.value) return;
+  
+  nextTick(() => {
+    chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+  });
+};
+
+// 监听聊天消息变化
+watch(() => chatStore.chatMessages, () => {
+  if (shouldScrollToBottom.value) {
+    scrollToBottom();
+  }
+}, { deep: true });
+
+// 监听聊天容器的滚动事件
+const handleScroll = () => {
+  shouldScrollToBottom.value = checkShouldScrollToBottom();
+};
+
+// 当组件挂载后添加滚动事件监听
+const setupScrollListener = () => {
+  if (chatContainer.value) {
+    chatContainer.value.addEventListener('scroll', handleScroll);
+    // 初始化时检查是否应该滚动到底部
+    shouldScrollToBottom.value = checkShouldScrollToBottom();
+  }
+};
+
+// 当isChatActive变化时设置滚动监听
+watch(() => props.isChatActive, (newVal) => {
+  if (newVal) {
+    nextTick(setupScrollListener);
+  }
+});
 
 const openKnowledgePanel = () => {
   knowledgeStore.toggleKnowledgePanel();
@@ -91,12 +138,8 @@ const searchQuestion = () => {
   if (searchInput.value.trim()) {    
     emit('search', searchInput.value.trim());
     searchInput.value = '';
-    
-    setTimeout(() => {
-      if (chatContainer.value) {
-        chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
-      }
-    }, 100);
+    shouldScrollToBottom.value = true;
+    scrollToBottom();
   }
 };
 
@@ -137,6 +180,7 @@ const getKnowledgeButtonTitle = computed(() => {
   padding: 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   border: 1px solid var(--color-border);
+  scroll-behavior: smooth;
 }
 
 .input-group {

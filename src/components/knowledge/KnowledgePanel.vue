@@ -125,7 +125,7 @@
 <script setup>
 import { ref } from 'vue';
 import ToastMessage from '../ToastMessage.vue';
-import { useToastStore } from '../../stores/toast';
+import { useToastStore } from '@/stores/toast.js';
 
 const props = defineProps({
   isActive: {
@@ -188,16 +188,20 @@ const handleFileUpload = (event) => {
   const files = event.target.files;
   if (!files.length) return;
 
-  if (!props.selectedDatabase) {
+  if (!panelSelectedDatabase.value) {
     toastStore.showToast('请先选择一个数据库', 'error');
     return;
   }
 
-  emit('upload-files', Array.from(files));
+  emit('upload-files', Array.from(files), panelSelectedDatabase.value);
 };
 
 const handleDeleteFile = (file) => {
-  emit('delete-file', file);
+  if (!panelSelectedDatabase.value) {
+    toastStore.showToast('请先选择一个知识库', 'error');
+    return;
+  }
+  emit('delete-file', file, panelSelectedDatabase.value);
 };
 
 const handleConfirmDatabase = () => {
